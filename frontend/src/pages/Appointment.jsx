@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
+import RelatedDoctors from "../components/RelatedDoctors";
 
 function Appointment() {
   const { docId } = useParams();
@@ -17,99 +18,60 @@ function Appointment() {
     setDocInfo(docInfo);
   };
 
-  // const getAvailableSlots = async () => {
-  //   setDocSlots([]);
-
-  //   let today = new Date();
-
-  //   for (let i = 0; i < 7; i++) {
-  //     let currentDate = new Date(today);
-  //     currentDate.setDate(today.getDate() + i);
-
-  //     let endTime = new Date();
-  //     endTime.setDate(today.getDate() + i);
-  //     endTime.setHours(21, 0, 0, 0);
-
-  //     if (today.getDate() === currentDate.getDate()) {
-  //       currentDate.setHours(
-  //         currentDate.getHours() > 10 ? currentDate.getHours() + 1 : 10
-  //       );
-  //       currentDate.setMinutes(currentDate.getMinutes() > 30 ? 30 : 0);
-  //     } else {
-  //       currentDate.setHours(10);
-  //       currentDate.setMinutes(0);
-  //     }
-
-  //     let timeSlots = [];
-
-  //     while (currentDate < endTime) {
-  //       let formattedTime = currentDate.toLocaleTimeString([], {
-  //         hour: "2-digit",
-  //         minute: "2-digit",
-  //       });
-
-  //       timeSlots.push({
-  //         datetime: new Date(currentDate),
-  //         time: formattedTime,
-  //       });
-
-  //       currentDate.setMinutes(currentDate.getMinutes() + 30);
-  //     }
-
-  //     setDocSlots((prev) => [...prev, timeSlots]);
-  //   }
-  // };
-
-
   const getAvailableSlots = async () => {
-    setDocSlots([]);  // Clear slots initially
-  
-    const today = new Date();  // Get current date and time
-    const generateSlots = (startDate) => {
-      const slots = [];
-      const endTime = new Date(startDate);
-      endTime.setHours(21, 0, 0, 0);  // Set end time to 9:00 PM
-  
-      while (startDate < endTime) {
-        slots.push({
-          datetime: new Date(startDate),
-          time: startDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        });
-        startDate.setMinutes(startDate.getMinutes() + 30);  // Increment by 30 minutes
-      }
-  
-      return slots;
-    };
-  
+    setDocSlots([]);
+
+    let allSlots = [];
+    let today = new Date();
+
     for (let i = 0; i < 7; i++) {
-      const currentDate = new Date(today);
-      currentDate.setDate(today.getDate() + i);  // Adjust for each day
-  
-      if (i === 0) {
-        // For the current day, start from the next available hour or 10:00 AM
-        currentDate.setHours(Math.max(currentDate.getHours() + 1, 10));
+      let currentDate = new Date(today);
+      currentDate.setDate(today.getDate() + i);
+
+      let endTime = new Date();
+      endTime.setDate(today.getDate() + i);
+      endTime.setHours(21, 0, 0, 0);
+
+      if (i === 0 && today.getHours() >= 21) {
+        continue;
+      }
+
+      if (today.getDate() === currentDate.getDate()) {
+        currentDate.setHours(
+          currentDate.getHours() > 10 ? currentDate.getHours() + 1 : 10
+        );
         currentDate.setMinutes(currentDate.getMinutes() > 30 ? 30 : 0);
       } else {
-        // For future days, start at 10:00 AM
-        currentDate.setHours(10, 0, 0, 0);
+        currentDate.setHours(10);
+        currentDate.setMinutes(0);
       }
-  
-      const timeSlots = generateSlots(currentDate);  // Generate slots for the day
+
+      let timeSlots = [];
+
+      while (currentDate < endTime) {
+        let formattedTime = currentDate.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        timeSlots.push({
+          datetime: new Date(currentDate),
+          time: formattedTime,
+        });
+
+        currentDate.setMinutes(currentDate.getMinutes() + 30);
+      }
       setDocSlots((prev) => [...prev, timeSlots]);
     }
   };
-  
+
   useEffect(() => {
     fetchDocInfo();
   }, [doctors, docId]);
 
   useEffect(() => {
     getAvailableSlots();
-  }, [doctors]);
-
-  useEffect(() => {
-    console.log(docSlots);
-  }, [doctors]);
+  }, [doctors, docId]);
 
   return (
     <div>
@@ -156,6 +118,48 @@ function Appointment() {
           </p>
         </div>
       </div>
+
+      <div className="sm:ml-72 sm:pl-4 mt-4 font-medium text-gray-700">
+        <p>Booking slots</p>
+        <div className="flex gap-3 items-center w-full overflow-x-scroll mt-4">
+          {docSlots.length &&
+            docSlots.map((item, index) => (
+              <div
+                key={index}
+                onClick={() => setSlotIndex(index)}
+                className={`text-center py-6 min-w-16 rounded-full cursor-pointer ${
+                  slotIndex === index
+                    ? "bg-primary text-white border"
+                    : "border border-gray-500"
+                }`}
+              >
+                <p>{item[0] && daysOfWeek[item[0].datetime.getDay()]}</p>
+                <p>{item[0] && item[0].datetime.getDate()}</p>
+              </div>
+            ))}
+        </div>
+
+        <div className="flex items-center gap-3 w-full overflow-x-scroll mt-4">
+          {docSlots.length &&
+            docSlots[slotIndex].map((item, index) => (
+              <p
+                onClick={() => setSlotTime(item.time)}
+                key={index}
+                className={`text-sm font-light mb-3 flex-shrink-0 px-5 py-2 rounded-full cursor-pointer ${
+                  item.time === slotTime
+                    ? "bg-primary text-white"
+                    : "text-gray-400 border border-gray-500"
+                }`}
+              >
+                {item.time.toLowerCase()}
+              </p>
+            ))}
+        </div>
+        <div className="bg-primary text-white text-sm font-lignt px-14 py-3 rounded-full my-6 w-[250px]  cursor-pointer hover:bg-green-500">
+          Book An Appointment
+        </div>
+      </div>
+      <RelatedDoctors docId={docId} speciality={docInfo?.speciality} />
     </div>
   );
 }
