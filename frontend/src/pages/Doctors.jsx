@@ -4,6 +4,7 @@ import { AppContext } from "../context/AppContext";
 
 function Doctors() {
   const [filterDoc, setFilterDoc] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   const { speciality } = useParams();
   const { doctors } = useContext(AppContext);
@@ -28,7 +29,19 @@ function Doctors() {
     <div>
       <p className="text-gray-600">Browse through the doctors specialist.</p>
       <div className="flex flex-col sm:flex-row items-start gap-5 mt-5">
-        <div className="flex flex-col gap-4 text-sm text-gray-600">
+        <button
+          className={`py-1 px-3 border rounded text-sm transition-all sm:hidden ${
+            showFilters ? "bg-primary text-white" : ""
+          }`}
+          onClick={() => setShowFilters((prev) => !prev)}
+        >
+          Filters
+        </button>
+        <div
+          className={`flex flex-col gap-4 text-sm text-gray-600 ${
+            showFilters ? "flex" : "hidden sm:flex"
+          }`}
+        >
           <p
             onClick={() =>
               speciality === "General physician"
