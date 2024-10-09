@@ -19,6 +19,8 @@ function Login() {
 
     try {
       const response = await axiosInstance.post(url, requestBody);
+      console.log(response);
+      
 
       if (response.data.status === 200) {
         toast.success(response.data.message || `${state} successful!`);
