@@ -20,9 +20,8 @@ function Login() {
     try {
       const response = await axiosInstance.post(url, requestBody);
       console.log(response);
-      
 
-      if (response.data.status === 200) {
+      if (response.data.statusCode === 200) {
         toast.success(response.data.message || `${state} successful!`);
         navigate("/");
         window.scrollTo(0, 0);
@@ -33,7 +32,7 @@ function Login() {
       if (error.response) {
         toast.error(
           error.response.data.message ||
-          "An error occurred during authentication"
+            "An error occurred during authentication"
         );
       } else if (error.request) {
         toast.error("No response from the server. Please try again later.");

@@ -1,12 +1,26 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 import { assets } from "../assets/assets_frontend/assets";
+import axiosInstance from "../config/axiosInstance";
 
 function Navbar() {
   const navigate = useNavigate();
-
   const [showMenu, setShowMenu] = useState(false);
-  const [token, setToken] = useState(true);
+  const [token, setToken] = useState(false);
+
+  useEffect(() => {
+    const accessToken = Cookies.get("accessToken");
+    if (accessToken) {
+      setToken(true);
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    await axiosInstance.post('logout')
+    setToken(false);
+    navigate("/login");
+  };
 
   return (
     <div className="flex items-center justify-between text-sm py-4 mb-5 border-b border-b-gray-400">
@@ -58,7 +72,7 @@ function Navbar() {
                   My Appointments
                 </p>
                 <p
-                  onClick={() => setToken(false)}
+                  onClick={handleLogout}
                   className="hover:text-black cursor-pointer"
                 >
                   Logout
