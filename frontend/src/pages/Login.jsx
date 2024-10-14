@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import axiosInstance from "../config/axiosInstance";
 
 function Login() {
-  const [state, setState] = useState("Sign Up");
+  const [state, setState] = useState("Log In");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,18 +15,24 @@ function Login() {
 
     const requestBody =
       state === "Sign Up" ? { name, email, password } : { email, password };
-    const url = `/auth/${state === "Sign Up" ? "signup" : "login"}`;
+    const url = `/auth/${state === "Sign Up" ? "register" : "login"}`;
 
     try {
       const response = await axiosInstance.post(url, requestBody);
       console.log(response);
 
-      if (response.data.statusCode === 200) {
-        toast.success(response.data.message || `${state} successful!`);
-        navigate("/");
-        window.scrollTo(0, 0);
+      if (response.status === 201) {
+        
+        const token = response.data.accessToken;
+  
+        if (token) {
+          setIsLoggedIn(true);
+          toast.success(response.data.message || `${state} successful!`);
+          navigate("/");
+          window.scrollTo(0, 0);
+        }
       } else {
-        toast.error(response.data.message || "Something went wrong");
+        toast.error(response.message || "Something went wrong");
       }
     } catch (error) {
       if (error.response) {

@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
 import { assets } from "../assets/assets_frontend/assets";
 import axiosInstance from "../config/axiosInstance";
 
@@ -9,17 +8,14 @@ function Navbar() {
   const [showMenu, setShowMenu] = useState(false);
   const [token, setToken] = useState(false);
 
-  useEffect(() => {
-    const accessToken = Cookies.get("accessToken");
-    if (accessToken) {
-      setToken(true);
-    }
-  }, []);
-
   const handleLogout = async () => {
-    await axiosInstance.post('logout')
-    setToken(false);
-    navigate("/login");
+    try {
+      await axiosInstance.post("logout", {});
+      setToken(false);
+      navigate("/login");
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
