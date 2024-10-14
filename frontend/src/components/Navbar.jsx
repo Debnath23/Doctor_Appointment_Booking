@@ -1,18 +1,62 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets_frontend/assets";
 import axiosInstance from "../config/axiosInstance";
+import Cookies from "js-cookie";
 
 function Navbar() {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
-  const [token, setToken] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
+
+  const checkLoginStatus = async () => {
+    const storedLoginStatus = localStorage.getItem("isLoggedIn") === "true";
+    if (storedLoginStatus) {
+      try {
+        const token = Cookies.get('accessToken')
+        console.log(token);
+        
+        const response = await axiosInstance.get("/auth/verify", {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        });
+        
+        setIsLoggedIn(true);
+        setUser(response.data.user);
+      } catch (error) {
+        localStorage.removeItem("isLoggedIn");
+        setIsLoggedIn(false);
+        setUser(null);
+      }
+    } else {
+      setIsLoggedIn(false);
+      setUser(null);
+    }
+  };
+
+  useEffect(() => {
+    checkLoginStatus();
+
+    const handleLoginStatusChange = () => {
+      checkLoginStatus();
+    };
+
+    window.addEventListener('loginStatusChanged', handleLoginStatusChange);
+
+    return () => {
+      window.removeEventListener('loginStatusChanged', handleLoginStatusChange);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
       await axiosInstance.post("logout", {});
-      setToken(false);
+      localStorage.removeItem("isLoggedIn");
+      setIsLoggedIn(false);
+      setUser(null);
       navigate("/login");
+      window.dispatchEvent(new Event('loginStatusChanged'));
     } catch (error) {
       console.log(error);
     }
@@ -46,11 +90,11 @@ function Navbar() {
         </NavLink>
       </ul>
       <div className="flex items-center gap-4">
-        {token ? (
+        {isLoggedIn ? (
           <div className="flex items-center gap-2 cursor-pointer group relative">
             <img
               className="w-8 rounded-full"
-              src="/src/assets/assets_frontend/profile_pic.jpeg"
+              src={user?.profilePicture || "/src/assets/assets_frontend/profile_pic.jpeg"}
               alt=""
             />
             <div className="absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 z-20 hidden group-hover:block">

@@ -19,15 +19,14 @@ function Login() {
 
     try {
       const response = await axiosInstance.post(url, requestBody);
-      console.log(response);
 
       if (response.status === 201) {
-        
         const token = response.data.accessToken;
-  
+
         if (token) {
-          setIsLoggedIn(true);
-          toast.success(response.data.message || `${state} successful!`);
+          localStorage.setItem("isLoggedIn", "true");
+          window.dispatchEvent(new Event('loginStatusChanged'));
+          toast.success(response?.data?.message || `${state} successful!`);
           navigate("/");
           window.scrollTo(0, 0);
         }

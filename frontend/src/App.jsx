@@ -13,21 +13,14 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    const token = Cookies.get("accessToken");
-    setIsLoggedIn(!!token);
-  }, []);
-
   return (
     <div className="mx-4 sm:mx-[10%]">
-      <Navbar isLoggedIn={isLoggedIn} handleLogout={() => setIsLoggedIn(false)} />
+      <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/doctors" element={<Doctors />} />
         <Route path="/doctors/:speciality" element={<Doctors />} />
-        <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/my-profile" element={<MyProfile />} />
