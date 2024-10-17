@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets_frontend/assets";
 import axiosInstance from "../config/axiosInstance";
-import Cookies from "js-cookie";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -14,14 +13,10 @@ function Navbar() {
     const storedLoginStatus = localStorage.getItem("isLoggedIn") === "true";
     if (storedLoginStatus) {
       try {
-        const token = Cookies.get('accessToken')
-        console.log(token);
-        
         const response = await axiosInstance.get("/auth/verify", {
-          headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
         });
-        
+
         setIsLoggedIn(true);
         setUser(response.data.user);
       } catch (error) {
@@ -42,21 +37,21 @@ function Navbar() {
       checkLoginStatus();
     };
 
-    window.addEventListener('loginStatusChanged', handleLoginStatusChange);
+    window.addEventListener("loginStatusChanged", handleLoginStatusChange);
 
     return () => {
-      window.removeEventListener('loginStatusChanged', handleLoginStatusChange);
+      window.removeEventListener("loginStatusChanged", handleLoginStatusChange);
     };
   }, []);
 
   const handleLogout = async () => {
     try {
-      await axiosInstance.post("logout", {});
+      await axiosInstance.delete("/auth/logout", {}, { withCredentials: true });
       localStorage.removeItem("isLoggedIn");
       setIsLoggedIn(false);
       setUser(null);
       navigate("/login");
-      window.dispatchEvent(new Event('loginStatusChanged'));
+      window.dispatchEvent(new Event("loginStatusChanged"));
     } catch (error) {
       console.log(error);
     }
@@ -94,7 +89,10 @@ function Navbar() {
           <div className="flex items-center gap-2 cursor-pointer group relative">
             <img
               className="w-8 rounded-full"
-              src={user?.profilePicture || "/src/assets/assets_frontend/profile_pic.jpeg"}
+              src={
+                user?.profilePicture ||
+                "/src/assets/assets_frontend/profile_pic.jpeg"
+              }
               alt=""
             />
             <div className="absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 z-20 hidden group-hover:block">
