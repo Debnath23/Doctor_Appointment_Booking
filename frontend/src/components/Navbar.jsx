@@ -109,6 +109,14 @@ function Navbar() {
                 >
                   My Appointments
                 </p>
+                {user.userType === 1 && (
+                  <p
+                    onClick={() => navigate("/add-doctors")}
+                    className="hover:text-black cursor-pointer"
+                  >
+                    Add Doctors
+                  </p>
+                )}
                 <p
                   onClick={handleLogout}
                   className="hover:text-black cursor-pointer"

@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
     if (accessToken) {
       setToken(accessToken);
     }
-  }, [token]);
+  }, []);
 
   const login = (accessToken) => {
     Cookies.set('accessToken', accessToken, { expires: import.meta.ACCESS_TOKEN_EXPIRY });
