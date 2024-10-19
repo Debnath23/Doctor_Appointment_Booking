@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Routes, Route } from "react-router-dom";
-import Cookies from 'js-cookie'
 import Home from "./pages/Home";
 import Doctors from "./pages/Doctors";
 import Login from "./pages/Login";
@@ -12,6 +11,7 @@ import Appointment from "./pages/Appointment";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import AddDoctors from "./pages/AddDoctors";
+import DoctorLogin from "./pages/DoctorLogin";
 
 function App() {
   return (
@@ -28,6 +28,7 @@ function App() {
         <Route path="/my-appointments" element={<MyAppointments />} />
         <Route path="/appointment/:docId" element={<Appointment />} />
         <Route path="/add-doctors" element={<AddDoctors />} />
+        <Route path="/doctor-login" element={<DoctorLogin />} />
       </Routes>
       <Footer />
     </div>
