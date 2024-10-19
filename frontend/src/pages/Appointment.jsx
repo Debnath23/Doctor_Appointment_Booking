@@ -2,26 +2,39 @@ import React, { useContext, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import RelatedDoctors from "../components/RelatedDoctors";
+import axiosInstance from "../config/axiosInstance";
 
 function Appointment() {
   const { docId } = useParams();
-  const { doctors, currencySymbol } = useContext(AppContext);
+  const { currencySymbol } = useContext(AppContext);
   const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
   const [docInfo, setDocInfo] = useState(null);
   const [docSlots, setDocSlots] = useState([]);
   const [slotIndex, setSlotIndex] = useState(0);
   const [slotTime, setSlotTime] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
   const fetchDocInfo = async () => {
-    const docInfo = doctors.find((doc) => doc._id === docId);
-    setDocInfo(docInfo);
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(`/doctor/${docId}`);
+      if (response.status === 200) {
+        setDocInfo(response.data.user);
+        setLoading(false);
+        setError(false);
+      }
+    } catch (error) {
+      console.error("Error fetching doctor info:", error);
+      setLoading(false);
+      setError(true);
+    }
   };
 
   const getAvailableSlots = async () => {
     setDocSlots([]);
 
-    let allSlots = [];
     let today = new Date();
 
     for (let i = 0; i < 7; i++) {
@@ -66,12 +79,30 @@ function Appointment() {
   };
 
   useEffect(() => {
-    fetchDocInfo();
-  }, [doctors, docId]);
+    if (docId) {
+      fetchDocInfo();
+    }
+  }, [docId]);
 
   useEffect(() => {
     getAvailableSlots();
-  }, [doctors, docId]);
+  }, [docId]);
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p>Opps! Unable to fetch doctor information.</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -79,7 +110,7 @@ function Appointment() {
         <div>
           <img
             className="bg-primary w-full sm:max-w-72 rounded-lg"
-            src={docInfo?.image}
+            src={docInfo?.profileImg}
             alt="img"
           />
         </div>

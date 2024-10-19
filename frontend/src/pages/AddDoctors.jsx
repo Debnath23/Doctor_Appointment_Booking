@@ -1,41 +1,76 @@
-import React from "react";
-import { useForm } from "react-hook-form";
+import React, { useState } from "react";
 import { toast } from "react-toastify";
 import axiosInstance from "../config/axiosInstance";
 
 function AddDoctors() {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm();
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    degree: "",
+    speciality: "",
+    experience: "",
+    fees: "",
+    about: "",
+    profileImg: null,
+    password: "",
+  });
+  const [loading, setLoading] = useState(false);
 
-  const onSubmit = async (data) => {
-    const formData = new FormData();
-  
-    for (const key in data) {
-      formData.append(key, data[key]);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      profileImg: e.target.files[0],
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true)
+    const data = new FormData();
+    for (const key in formData) {
+      data.append(key, formData[key]);
     }
-  
+
     try {
       const response = await axiosInstance.post(
         "/admin/register-doctor",
-        formData,
+        data,
         {
           withCredentials: true,
           headers: { "Content-Type": "multipart/form-data" },
         }
       );
-  
-      console.log(response);
-  
+
       if (response.status === 201) {
         toast.success(response?.data?.message);
         window.scrollTo(0, 0);
+        setFormData({
+          name: "",
+          email: "",
+          degree: "",
+          speciality: "",
+          experience: "",
+          fees: "",
+          about: "",
+          profileImg: null,
+          password: "",
+        });
+        document.querySelector('input[type="file"]').value = "";
+        setLoading(false);
       } else {
         toast.error(response.message || "Something went wrong");
+        setLoading(false);
       }
     } catch (error) {
+      setLoading(false);
       if (error.response) {
         toast.error(
           error.response.data.message ||
@@ -48,10 +83,10 @@ function AddDoctors() {
       }
     }
   };
-  
+
   return (
     <form
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={handleSubmit}
       className="max-w-4xl mx-auto p-6 bg-white shadow-md rounded-lg mt-8"
     >
       <h2 className="text-2xl font-bold mb-6 text-center text-gray-700">
@@ -65,14 +100,12 @@ function AddDoctors() {
           </label>
           <input
             type="text"
-            {...register("name", { required: "Name is required" })}
-            className={`mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary ${
-              errors.name ? "border-red-500" : ""
-            }`}
+            name="name"
+            required
+            value={formData.name}
+            onChange={handleChange}
+            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
           />
-          {errors.name && (
-            <p className="text-red-500 text-sm">{errors.name.message}</p>
-          )}
         </div>
 
         <div>
@@ -81,14 +114,12 @@ function AddDoctors() {
           </label>
           <input
             type="email"
-            {...register("email", { required: "Email is required" })}
-            className={`mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary ${
-              errors.email ? "border-red-500" : ""
-            }`}
+            name="email"
+            required
+            value={formData.email}
+            onChange={handleChange}
+            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
           />
-          {errors.email && (
-            <p className="text-red-500 text-sm">{errors.email.message}</p>
-          )}
         </div>
 
         <div>
@@ -97,14 +128,12 @@ function AddDoctors() {
           </label>
           <input
             type="text"
-            {...register("degree", { required: "Degree is required" })}
-            className={`mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary ${
-              errors.degree ? "border-red-500" : ""
-            }`}
+            name="degree"
+            required
+            value={formData.degree}
+            onChange={handleChange}
+            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
           />
-          {errors.degree && (
-            <p className="text-red-500 text-sm">{errors.degree.message}</p>
-          )}
         </div>
 
         <div>
@@ -113,14 +142,12 @@ function AddDoctors() {
           </label>
           <input
             type="text"
-            {...register("speciality", { required: "Speciality is required" })}
-            className={`mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary ${
-              errors.speciality ? "border-red-500" : ""
-            }`}
+            name="speciality"
+            required
+            value={formData.speciality}
+            onChange={handleChange}
+            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
           />
-          {errors.speciality && (
-            <p className="text-red-500 text-sm">{errors.speciality.message}</p>
-          )}
         </div>
 
         <div>
@@ -129,14 +156,12 @@ function AddDoctors() {
           </label>
           <input
             type="text"
-            {...register("experience", { required: "Experience is required" })}
-            className={`mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary ${
-              errors.experience ? "border-red-500" : ""
-            }`}
+            name="experience"
+            required
+            value={formData.experience}
+            onChange={handleChange}
+            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
           />
-          {errors.experience && (
-            <p className="text-red-500 text-sm">{errors.experience.message}</p>
-          )}
         </div>
 
         <div>
@@ -145,14 +170,12 @@ function AddDoctors() {
           </label>
           <input
             type="text"
-            {...register("fees", { required: "Fees are required" })}
-            className={`mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary ${
-              errors.fees ? "border-red-500" : ""
-            }`}
+            name="fees"
+            required
+            value={formData.fees}
+            onChange={handleChange}
+            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
           />
-          {errors.fees && (
-            <p className="text-red-500 text-sm">{errors.fees.message}</p>
-          )}
         </div>
 
         <div className="sm:col-span-2">
@@ -161,14 +184,12 @@ function AddDoctors() {
           </label>
           <textarea
             rows={5}
-            {...register("about", { required: "About is required" })}
-            className={`mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary ${
-              errors.about ? "border-red-500" : ""
-            }`}
+            name="about"
+            required
+            value={formData.about}
+            onChange={handleChange}
+            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
           />
-          {errors.about && (
-            <p className="text-red-500 text-sm">{errors.about.message}</p>
-          )}
         </div>
 
         <div>
@@ -177,24 +198,11 @@ function AddDoctors() {
           </label>
           <input
             type="file"
-            {...register("profileImg", {
-              required: "Profile image is required",
-            })}
-            // onChange={(e) => {
-            //     const file = e.target.files[0];
-            //     console.log(file);
-
-            //     if (file) {
-            //       setValue("profileImg", file);
-            //     }
-            //   }}
-            className={`mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary ${
-              errors.profileImg ? "border-red-500" : ""
-            }`}
+            name="profileImg"
+            required
+            onChange={handleFileChange}
+            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
           />
-          {errors.profileImg && (
-            <p className="text-red-500 text-sm">{errors.profileImg.message}</p>
-          )}
         </div>
 
         <div>
@@ -203,14 +211,12 @@ function AddDoctors() {
           </label>
           <input
             type="password"
-            {...register("password", { required: "Password is required" })}
-            className={`mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary ${
-              errors.password ? "border-red-500" : ""
-            }`}
+            name="password"
+            required
+            value={formData.password}
+            onChange={handleChange}
+            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
           />
-          {errors.password && (
-            <p className="text-red-500 text-sm">{errors.password.message}</p>
-          )}
         </div>
       </div>
 
@@ -218,7 +224,9 @@ function AddDoctors() {
         type="submit"
         className="mt-6 w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
       >
-        Submit
+        {
+          loading ? 'Loading...' : 'Submit'
+        }
       </button>
     </form>
   );

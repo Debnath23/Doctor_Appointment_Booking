@@ -1,20 +1,44 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { AppContext } from "../context/AppContext";
+import axiosInstance from "../config/axiosInstance";
 
 function Doctors() {
   const [filterDoc, setFilterDoc] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [doctors, setDoctors] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
   const { speciality } = useParams();
-  const { doctors } = useContext(AppContext);
-
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchAllDoctorsDetails = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosInstance.get("/doctor/all-doctors-details");
+        if (response.status === 200) {
+          setDoctors(response.data.doctors);
+          setLoading(false);
+          setError(false);
+        }
+      } catch (error) {
+        setLoading(false);
+        setError(true);
+      }
+    };
+
+    fetchAllDoctorsDetails();
+  }, []);
 
   const applyFilter = () => {
     if (speciality) {
       setFilterDoc(
-        doctors.filter((doctor) => doctor.speciality === speciality)
+        doctors?.filter(
+          (doctor) =>
+            doctor.speciality.trim().toLowerCase() ===
+            speciality.trim().toLowerCase()
+        )
       );
     } else {
       setFilterDoc(doctors);
@@ -22,8 +46,26 @@ function Doctors() {
   };
 
   useEffect(() => {
-    applyFilter();
+    if (doctors) {
+      applyFilter();
+    }
   }, [doctors, speciality]);
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p>Opps! Unable to fetch doctors information.</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -120,23 +162,31 @@ function Doctors() {
           </p>
         </div>
         <div className="w-full grid grid-cols-auto gap-4 pt-5 gap-y-6 px-3 sm:px-0">
-          {filterDoc?.map((item, index) => (
-            <div
-              key={index}
-              onClick={() => navigate(`/appointment/${item._id}`)}
-              className="border border-blue-200 rounded-xl overflow-hidden cursor-pointer hover:translate-y-[-10px] transition-all duration-500"
-            >
-              <img src={item.image} alt="img" className="bg-blue-50" />
-              <div className="p-4">
-                <div className="flex items-center gap-2 text-sm text-center text-green-500">
-                  <p className="w-2 h-2 bg-green-500 rounded-full"></p>
-                  <p>Available</p>
-                </div>
-                <p className="text-gray-900 text-lg font-medium">{item.name}</p>
-                <p className="text-gray-600 text-sm">{item.speciality}</p>
-              </div>
+          {filterDoc?.length === 0 ? (
+            <div className="flex justify-center">
+              <p>No doctors found in this category.</p>
             </div>
-          ))}
+          ) : (
+            filterDoc?.map((item) => (
+              <div
+                key={item._id}
+                onClick={() => navigate(`/appointment/${item._id}`)}
+                className="border border-blue-200 rounded-xl overflow-hidden cursor-pointer hover:translate-y-[-10px] transition-all duration-500"
+              >
+                <img src={item.profileImg} alt="img" className="bg-blue-50" />
+                <div className="p-4">
+                  <div className="flex items-center gap-2 text-sm text-center text-green-500">
+                    <p className="w-2 h-2 bg-green-500 rounded-full"></p>
+                    <p>Available</p>
+                  </div>
+                  <p className="text-gray-900 text-lg font-medium">
+                    {item.name}
+                  </p>
+                  <p className="text-gray-600 text-sm">{item.speciality}</p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
