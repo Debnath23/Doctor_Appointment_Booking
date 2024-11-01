@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axiosInstance from "../config/axiosInstance";
+import axios from "axios";
 
 function Doctors() {
   const [filterDoc, setFilterDoc] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [doctors, setDoctors] = useState(null);
+  const [doctors, setDoctors] = useState([]);
+  const [searchDoctor, setSearchDoctor] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
@@ -13,23 +15,72 @@ function Doctors() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchAllDoctorsDetails = async () => {
+    const searchDoctorsDetails = async () => {
       try {
-        setLoading(true);
-        const response = await axiosInstance.get("/doctor/all-doctors-details");
-        if (response.status === 200) {
-          setDoctors(response.data.doctors);
-          setLoading(false);
-          setError(false);
+        if (!searchDoctor) {
+          const allDoctorsResponse = await axiosInstance.get(
+            "/doctor/all-doctors-details"
+          );
+          if (allDoctorsResponse.status === 200) {
+            setDoctors(allDoctorsResponse.data.doctors);
+          }
+        } else {
+          const response = await axiosInstance.get(
+            `/doctor/search?name=${searchDoctor}`
+          );
+          if (response.status === 200) {
+            setDoctors(response.data.doctors);
+          }
         }
+        setError(false);
       } catch (error) {
-        setLoading(false);
         setError(true);
       }
     };
 
-    fetchAllDoctorsDetails();
-  }, []);
+    searchDoctorsDetails();
+  }, [searchDoctor]);
+
+  useEffect(() => {
+    let cancelTokenSource;
+
+    const debounceSearch = setTimeout(() => {
+      cancelTokenSource = axiosInstance.CancelToken.source();
+
+      const searchDoctorsDetails = async () => {
+        if (!searchDoctor) return;
+
+        try {
+          setLoading(true);
+          const response = await axiosInstance.get(`/doctor/search?name=${searchDoctor}`, {
+            cancelToken: cancelTokenSource.token
+          });
+
+          if (response.status === 200) {
+            setDoctors(response.data.doctors);
+            setError(false);
+          }
+        } catch (error) {
+          if (axios.isCancel(error)) {
+            console.log("Request canceled", error.message);
+          } else {
+            setError(true);
+          }
+        }
+      }
+
+      searchDoctorsDetails();
+
+    }, 500);
+
+    return () => {
+      clearTimeout(debounceSearch);
+      if (cancelTokenSource) {
+        cancelTokenSource.cancel("Canceling previous request due to new input.")
+      }
+    }
+  }, [searchDoctor])
+
 
   const applyFilter = () => {
     if (speciality) {
@@ -51,6 +102,16 @@ function Doctors() {
     }
   }, [doctors, speciality]);
 
+  useEffect(() => {
+    if (doctors) {
+      if (!speciality) {
+        setFilterDoc(doctors);
+      } else {
+        applyFilter();
+      }
+    }
+  }, [doctors, speciality]);
+
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -69,7 +130,17 @@ function Doctors() {
 
   return (
     <div>
-      <p className="text-gray-600">Browse through the doctors specialist.</p>
+      <div className="flex justify-between">
+        <p className="text-gray-600">Browse through the doctors specialist.</p>
+        <div>
+          <input
+            onChange={(e) => setSearchDoctor(e.target.value)}
+            type="search"
+            placeholder="Search Doctors"
+            className="border px-2 py-1 rounded-lg outline-none border-slate-400"
+          />
+        </div>
+      </div>
       <div className="flex flex-col sm:flex-row items-start gap-5 mt-5">
         <button
           className={`py-1 px-3 border rounded text-sm transition-all sm:hidden ${

@@ -1,20 +1,27 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import RelatedDoctors from "../components/RelatedDoctors";
 import axiosInstance from "../config/axiosInstance";
+import { toast } from "react-toastify";
+import { debounce } from "lodash";
 
 function Appointment() {
   const { docId } = useParams();
   const { currencySymbol } = useContext(AppContext);
   const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-
   const [docInfo, setDocInfo] = useState(null);
   const [docSlots, setDocSlots] = useState([]);
   const [slotIndex, setSlotIndex] = useState(0);
   const [slotTime, setSlotTime] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [appointmentInfo, setAppointmentInfo] = useState({
+    doctorId: docId,
+    appointmentDate: "",
+    appointmentTime: "",
+  });
+  const [submitButtonLoading, setSubmitButtonLoading] = useState(false);
 
   const fetchDocInfo = async () => {
     try {
@@ -22,76 +29,93 @@ function Appointment() {
       const response = await axiosInstance.get(`/doctor/${docId}`);
       if (response.status === 200) {
         setDocInfo(response.data.user);
-        setLoading(false);
-        setError(false);
       }
     } catch (error) {
       console.error("Error fetching doctor info:", error);
+    } finally {
       setLoading(false);
-      setError(true);
     }
   };
 
-  const getAvailableSlots = async () => {
-    setDocSlots([]);
+  const getAvailableSlots = useCallback(
+    debounce(async () => {
+      setDocSlots([]);
+      let today = new Date();
 
-    let today = new Date();
+      for (let i = 0; i < 7; i++) {
+        let currentDate = new Date(today);
+        currentDate.setDate(today.getDate() + i);
 
-    for (let i = 0; i < 7; i++) {
-      let currentDate = new Date(today);
-      currentDate.setDate(today.getDate() + i);
+        let endTime = new Date();
+        endTime.setDate(today.getDate() + i);
+        endTime.setHours(21, 0, 0, 0);
 
-      let endTime = new Date();
-      endTime.setDate(today.getDate() + i);
-      endTime.setHours(21, 0, 0, 0);
+        if (i === 0 && today.getHours() >= 21) continue;
 
-      if (i === 0 && today.getHours() >= 21) {
-        continue;
+        if (today.getDate() === currentDate.getDate()) {
+          currentDate.setHours(currentDate.getHours() > 10 ? currentDate.getHours() + 1 : 10);
+          currentDate.setMinutes(currentDate.getMinutes() > 30 ? 30 : 0);
+        } else {
+          currentDate.setHours(10);
+          currentDate.setMinutes(0);
+        }
+
+        let timeSlots = [];
+        while (currentDate < endTime) {
+          let formattedTime = currentDate.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          timeSlots.push({
+            datetime: new Date(currentDate),
+            time: formattedTime,
+          });
+          currentDate.setMinutes(currentDate.getMinutes() + 30);
+        }
+        setDocSlots((prev) => [...prev, timeSlots]);
       }
+    }, 300),
+    []
+  );
 
-      if (today.getDate() === currentDate.getDate()) {
-        currentDate.setHours(
-          currentDate.getHours() > 10 ? currentDate.getHours() + 1 : 10
-        );
-        currentDate.setMinutes(currentDate.getMinutes() > 30 ? 30 : 0);
+  const bookAppointment = async (e) => {
+    e.preventDefault();
+    setSubmitButtonLoading(true);
+
+    try {
+      const response = await axiosInstance.post(
+        `/user/book-appointment`,
+        appointmentInfo,
+        { withCredentials: true }
+      );
+
+      if (response.status === 200) {
+        toast.success(response.data.message);
+        window.scrollTo(0, 0);
+        setAppointmentInfo({ appointmentDate: "", appointmentTime: "" });
       } else {
-        currentDate.setHours(10);
-        currentDate.setMinutes(0);
+        toast.error(response.data.message || "Something went wrong");
       }
-
-      let timeSlots = [];
-
-      while (currentDate < endTime) {
-        let formattedTime = currentDate.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-
-        timeSlots.push({
-          datetime: new Date(currentDate),
-          time: formattedTime,
-        });
-
-        currentDate.setMinutes(currentDate.getMinutes() + 30);
-      }
-      setDocSlots((prev) => [...prev, timeSlots]);
+    } catch (error) {
+      toast.error(
+        error.response?.data.message || "An error occurred during appointment booking."
+      );
+    } finally {
+      setSubmitButtonLoading(false);
     }
   };
 
   useEffect(() => {
     if (docId) {
       fetchDocInfo();
+      getAvailableSlots();
     }
-  }, [docId]);
-
-  useEffect(() => {
-    getAvailableSlots();
-  }, [docId]);
+  }, [docId, getAvailableSlots]);
 
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <p>Opps! Unable to fetch doctor information.</p>
+        <p>Oops! Unable to fetch doctor information.</p>
       </div>
     );
   }
@@ -111,7 +135,7 @@ function Appointment() {
           <img
             className="bg-primary w-full sm:max-w-72 rounded-lg"
             src={docInfo?.profileImg}
-            alt="img"
+            alt="Doctor profile"
           />
         </div>
         <div className="flex-1 border border-gray-400 rounded-lg p-8 py-7 bg-white mx-2 sm:mx-0 mt-[-80px] sm:mt-0">
@@ -120,76 +144,63 @@ function Appointment() {
             <img
               className="w-5"
               src="/src/assets/assets_frontend/verified_icon.svg"
-              alt=""
+              alt="Verified icon"
             />
           </p>
-          <div className="flex items-center gap-2 text-sm mt-1 text-gray-600">
-            <p>
-              {docInfo?.degree} - {docInfo?.speciality}
-            </p>
-            <button className="py-0.5 px-2 border text-xs rounded-full">
-              {docInfo?.experience}
-            </button>
-          </div>
-          <div>
-            <p className="flex items-center gap-1 text-sm font-medium text-gray-900 mt-3">
-              About{" "}
-              <img src="/src/assets/assets_frontend/info_icon.svg" alt="" />
-            </p>
-            <p className="text-sm text-gray-500 max-w-[700px] mt-1">
-              {docInfo?.about}
-            </p>
-          </div>
+          <p className="flex items-center gap-2 text-sm mt-1 text-gray-600">
+            {docInfo?.degree} - {docInfo?.speciality}
+          </p>
           <p className="text-gray-500 font-medium mt-4">
-            Appointment fee:{" "}
-            <span className="text-gray-600">
-              {currencySymbol}
-              {docInfo?.fees}
-            </span>
+            Appointment fee: {currencySymbol}{docInfo?.fees}
+          </p>
+          <p className="text-gray-500 font-medium mt-4">
+            {docInfo?.about}
           </p>
         </div>
       </div>
 
-      <div className="sm:ml-72 sm:pl-4 mt-4 font-medium text-gray-700">
+      <form
+        onSubmit={bookAppointment}
+        className="sm:ml-72 sm:pl-4 mt-4 font-medium text-gray-700"
+      >
         <p>Booking slots</p>
         <div className="flex gap-3 items-center w-full overflow-x-scroll mt-4">
-          {docSlots.length &&
-            docSlots.map((item, index) => (
-              <div
-                key={index}
-                onClick={() => setSlotIndex(index)}
-                className={`text-center py-6 min-w-16 rounded-full cursor-pointer ${
-                  slotIndex === index
-                    ? "bg-primary text-white border"
-                    : "border border-gray-500"
-                }`}
-              >
-                <p>{item[0] && daysOfWeek[item[0].datetime.getDay()]}</p>
-                <p>{item[0] && item[0].datetime.getDate()}</p>
-              </div>
-            ))}
+          {docSlots.map((item, index) => (
+            <div
+              key={index}
+              onClick={() => setSlotIndex(index)}
+              className={`text-center py-6 min-w-16 rounded-full cursor-pointer ${
+                slotIndex === index ? "bg-primary text-white border" : "border border-gray-500"
+              }`}
+            >
+              <p>{item[0] && daysOfWeek[item[0].datetime.getDay()]}</p>
+              <p>{item[0] && item[0].datetime.getDate()}</p>
+            </div>
+          ))}
         </div>
 
         <div className="flex items-center gap-3 w-full overflow-x-scroll mt-4">
-          {docSlots.length &&
-            docSlots[slotIndex].map((item, index) => (
-              <p
-                onClick={() => setSlotTime(item.time)}
-                key={index}
-                className={`text-sm font-light mb-3 flex-shrink-0 px-5 py-2 rounded-full cursor-pointer ${
-                  item.time === slotTime
-                    ? "bg-primary text-white"
-                    : "text-gray-400 border border-gray-500"
-                }`}
-              >
-                {item.time.toLowerCase()}
-              </p>
-            ))}
+          {docSlots[slotIndex]?.map((item, index) => (
+            <p
+              onClick={() => setSlotTime(item.time)}
+              key={index}
+              className={`text-sm font-light mb-3 flex-shrink-0 px-5 py-2 rounded-full cursor-pointer ${
+                item.time === slotTime
+                  ? "bg-primary text-white"
+                  : "text-gray-400 border border-gray-500"
+              }`}
+            >
+              {item.time.toLowerCase()}
+            </p>
+          ))}
         </div>
-        <div className="bg-primary text-white text-sm font-lignt px-14 py-3 rounded-full my-6 w-[250px]  cursor-pointer hover:bg-green-500">
-          Book An Appointment
-        </div>
-      </div>
+        <button
+          type="submit"
+          className="bg-primary text-white text-sm font-light px-14 py-3 rounded-full my-6 w-[250px] cursor-pointer hover:bg-green-500"
+        >
+          {submitButtonLoading ? "Loading..." : "Book An Appointment"}
+        </button>
+      </form>
       <RelatedDoctors docId={docId} speciality={docInfo?.speciality} />
     </div>
   );
