@@ -16,12 +16,12 @@ function Appointment() {
   const [slotTime, setSlotTime] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [submitButtonLoading, setSubmitButtonLoading] = useState(false);
   const [appointmentInfo, setAppointmentInfo] = useState({
     doctorId: docId,
     appointmentDate: "",
     appointmentTime: "",
   });
-  const [submitButtonLoading, setSubmitButtonLoading] = useState(false);
 
   const fetchDocInfo = async () => {
     try {
@@ -53,7 +53,9 @@ function Appointment() {
         if (i === 0 && today.getHours() >= 21) continue;
 
         if (today.getDate() === currentDate.getDate()) {
-          currentDate.setHours(currentDate.getHours() > 10 ? currentDate.getHours() + 1 : 10);
+          currentDate.setHours(
+            currentDate.getHours() > 10 ? currentDate.getHours() + 1 : 10
+          );
           currentDate.setMinutes(currentDate.getMinutes() > 30 ? 30 : 0);
         } else {
           currentDate.setHours(10);
@@ -78,9 +80,32 @@ function Appointment() {
     []
   );
 
+  // Handler to update appointment date based on selected slot index
+  const handleSlotDateSelect = (index) => {
+    setSlotIndex(index);
+    const selectedDate = docSlots[index][0]?.datetime;
+    if (selectedDate) {
+      setAppointmentInfo((prev) => ({
+        ...prev,
+        appointmentDate: selectedDate.toISOString().split("T")[0],
+      }));
+    }
+  };
+
+  // Handler to update appointment time based on selected slot time
+  const handleSlotTimeSelect = (time) => {
+    setSlotTime(time);
+    setAppointmentInfo((prev) => ({
+      ...prev,
+      appointmentTime: time,
+    }));
+  };
+
   const bookAppointment = async (e) => {
     e.preventDefault();
     setSubmitButtonLoading(true);
+
+    console.log(appointmentInfo);
 
     try {
       const response = await axiosInstance.post(
@@ -98,7 +123,8 @@ function Appointment() {
       }
     } catch (error) {
       toast.error(
-        error.response?.data.message || "An error occurred during appointment booking."
+        error.response?.data.message ||
+          "An error occurred during appointment booking."
       );
     } finally {
       setSubmitButtonLoading(false);
@@ -151,15 +177,14 @@ function Appointment() {
             {docInfo?.degree} - {docInfo?.speciality}
           </p>
           <p className="text-gray-500 font-medium mt-4">
-            Appointment fee: {currencySymbol}{docInfo?.fees}
+            Appointment fee: {currencySymbol}
+            {docInfo?.fees}
           </p>
-          <p className="text-gray-500 font-medium mt-4">
-            {docInfo?.about}
-          </p>
+          <p className="text-gray-500 font-medium mt-4">{docInfo?.about}</p>
         </div>
       </div>
 
-      <form
+      <div
         onSubmit={bookAppointment}
         className="sm:ml-72 sm:pl-4 mt-4 font-medium text-gray-700"
       >
@@ -168,9 +193,11 @@ function Appointment() {
           {docSlots.map((item, index) => (
             <div
               key={index}
-              onClick={() => setSlotIndex(index)}
+              onClick={() => handleSlotDateSelect(index)}
               className={`text-center py-6 min-w-16 rounded-full cursor-pointer ${
-                slotIndex === index ? "bg-primary text-white border" : "border border-gray-500"
+                slotIndex === index
+                  ? "bg-primary text-white border"
+                  : "border border-gray-500"
               }`}
             >
               <p>{item[0] && daysOfWeek[item[0].datetime.getDay()]}</p>
@@ -182,7 +209,7 @@ function Appointment() {
         <div className="flex items-center gap-3 w-full overflow-x-scroll mt-4">
           {docSlots[slotIndex]?.map((item, index) => (
             <p
-              onClick={() => setSlotTime(item.time)}
+              onClick={() => handleSlotTimeSelect(item.time)}
               key={index}
               className={`text-sm font-light mb-3 flex-shrink-0 px-5 py-2 rounded-full cursor-pointer ${
                 item.time === slotTime
@@ -195,12 +222,13 @@ function Appointment() {
           ))}
         </div>
         <button
+          onClick={bookAppointment}
           type="submit"
           className="bg-primary text-white text-sm font-light px-14 py-3 rounded-full my-6 w-[250px] cursor-pointer hover:bg-green-500"
         >
           {submitButtonLoading ? "Loading..." : "Book An Appointment"}
         </button>
-      </form>
+      </div>
       <RelatedDoctors docId={docId} speciality={docInfo?.speciality} />
     </div>
   );
