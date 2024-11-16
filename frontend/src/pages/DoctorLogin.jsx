@@ -23,7 +23,7 @@ function DoctorLogin() {
           localStorage.setItem("isLoggedIn", "true");
           window.dispatchEvent(new Event('loginStatusChanged'));
           toast.success(response?.data?.message || `Login successful!`);
-          navigate("/my-appointments");
+          navigate("/doctor-profile");
           window.scrollTo(0, 0);
         }
       } else {

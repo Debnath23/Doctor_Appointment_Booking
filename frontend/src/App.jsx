@@ -12,6 +12,9 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import AddDoctors from "./pages/AddDoctors";
 import DoctorLogin from "./pages/DoctorLogin";
+import DoctorProfile from "./pages/DoctorProfile";
+import AllDoctors from "./pages/AllDoctors";
+import AllUsers from "./pages/AllUsers";
 
 function App() {
   return (
@@ -29,6 +32,9 @@ function App() {
         <Route path="/appointment/:docId" element={<Appointment />} />
         <Route path="/add-doctors" element={<AddDoctors />} />
         <Route path="/doctor-login" element={<DoctorLogin />} />
+        <Route path="/doctor-profile" element={<DoctorProfile />} />
+        <Route path="/all-doctors" element={<AllDoctors />} />
+        <Route path="/all-users" element={<AllUsers />} />
       </Routes>
       <Footer />
     </div>

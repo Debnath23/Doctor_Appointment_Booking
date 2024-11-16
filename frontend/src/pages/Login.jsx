@@ -26,7 +26,7 @@ function Login() {
         if (token) {
           localStorage.setItem("isLoggedIn", "true");
           window.dispatchEvent(new Event('loginStatusChanged'));
-          toast.success(response?.data?.message || `${state} successful!`);
+          toast.success(response?.data?.message || `${state} successfull!`);
           navigate("/");
           window.scrollTo(0, 0);
         }
